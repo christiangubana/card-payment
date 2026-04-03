@@ -1,12 +1,11 @@
 (function () {
   'use strict';
 
-  /* ── Security: define the expected parent origin ─────── */
   var PARENT_ORIGIN = window.location.origin;
 
   var ALLOWED_INBOUND_MESSAGES = [
     'INJECT_STYLES',
-    'VALIDATE_AND_TOKENIZE',
+    'TOKENIZE_CARD',
     'CLEAR_FORM'
   ];
 
@@ -112,7 +111,7 @@
     return errors;
   }
 
-  /* ── Mock tokenisation ──────────────────────────────── */
+  /* ── Mock tokenisation (simulates POST /cards/tokenize) ── */
 
   function mockTokenise() {
     var rawPan = fields.cardNumber.value.replace(/\s/g, '');
@@ -120,16 +119,20 @@
     var maskedPan = rawPan.slice(0, 4) + '****' + last4;
     var token = 'tok_' + Math.random().toString(36).slice(2, 14);
 
+    console.log('[Card Iframe] POST /cards/tokenize (mocked)');
+
     return new Promise(function (resolve) {
       setTimeout(function () {
-        resolve({
+        var result = {
           token: token,
           maskedPan: maskedPan,
           last4: last4,
           expiryDate: fields.expiryDate.value,
           cardholderName: fields.cardholderName.value.trim(),
           cardBrand: detectBrand(rawPan),
-        });
+        };
+        console.log('[Card Iframe] Token received:', result.token, '| Masked PAN:', result.maskedPan);
+        resolve(result);
       }, 600);
     });
   }
@@ -150,6 +153,8 @@
     if (!data || !data.type) return;
     if (ALLOWED_INBOUND_MESSAGES.indexOf(data.type) === -1) return;
 
+    console.log('[postMessage ← parent]', data.type);
+
     switch (data.type) {
       case 'INJECT_STYLES':
         var styleEl = document.getElementById('injected-styles');
@@ -157,12 +162,11 @@
         sendToParent('STYLES_APPLIED', {});
         break;
 
-      case 'VALIDATE_AND_TOKENIZE':
+      case 'TOKENIZE_CARD':
         var errors = validate();
         if (errors.length > 0) {
           sendToParent('VALIDATION_ERROR', { errors: errors });
         } else {
-          sendToParent('VALIDATION_SUCCESS', {});
           mockTokenise().then(function (result) {
             sendToParent('CARD_TOKENIZED', result);
           });
@@ -180,6 +184,7 @@
   });
 
   function sendToParent(type, payload) {
+    console.log('[postMessage → parent]', type);
     window.parent.postMessage({ type: type, payload: payload }, PARENT_ORIGIN);
   }
 

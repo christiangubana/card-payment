@@ -31,12 +31,12 @@ A mocked card payment page demonstrating the separation between a main payment p
 1. Iframe loads → sends `CARD_IFRAME_READY` to parent
 2. Parent receives ready signal → sends `INJECT_STYLES` with CSS payload
 3. Iframe applies styles → sends `STYLES_APPLIED`
-4. User clicks **Pay** → parent sends `VALIDATE_AND_TOKENIZE` to iframe
+4. User clicks **Pay** → parent sends `TOKENIZE_CARD` to iframe
 5. Iframe validates fields:
    - If errors → sends `VALIDATION_ERROR` with error details back to parent
-   - If valid → sends `VALIDATION_SUCCESS`, then mocks a tokenisation API call
-6. Iframe returns `CARD_TOKENIZED` with token + masked PAN to parent
-7. Parent performs a mocked payment request using the amount + card token
+   - If valid → mocks `POST /cards/tokenize`, then sends `CARD_TOKENIZED` with token + masked PAN
+6. Parent performs mocked `POST /payments/process` using amount + card token
+7. Parent logs redirect to success/failure URL
 
 ## Running Locally
 
@@ -85,7 +85,7 @@ if (ALLOWED_INBOUND_MESSAGES.indexOf(data.type) === -1) return;
 
 ### XSS prevention
 
-All dynamic content is inserted via `textContent` or safe DOM construction (`createElement` / `appendChild`). No user-controlled data passes through `innerHTML`. An `escapeHTML` utility is available for attribute contexts.
+All dynamic content is inserted via `textContent` or safe DOM construction (`createElement` / `appendChild`). No user-controlled data passes through `innerHTML`.
 
 ### PCI scope separation
 
@@ -105,7 +105,7 @@ The iframe uses `sandbox="allow-scripts allow-same-origin"`. In production, the 
 
 ## Test Cases
 
-Open the browser DevTools **Console** tab to observe `[Payment Request]` logs during payment flows.
+Open the browser DevTools **Console** tab to observe the full postMessage flow and payment logs.
 
 ### Test 1 — Style injection from main page to iframe
 
@@ -140,12 +140,20 @@ Open the browser DevTools **Console** tab to observe `[Payment Request]` logs du
 3. Click **Pay 100.00 EUR (Fee included)**.
 4. **Expected:**
    - Button shows "Processing..." with a spinner.
-   - Toast shows "Validating card..." (blue).
    - Toast shows "Card tokenized, processing payment..." (blue).
    - Toast shows "Payment of 100.00 EUR successful!" (green) — *note: there is a ~10% random chance the mock declines; retry if it does*.
    - The form fields are cleared after a successful payment.
    - A Visa stored card tile appears at the top of the page showing `4111****1111` and `12/28`.
-5. Open DevTools Console and verify the `[Payment Request]` log shows `{ amount: "100.00", currency: "EUR", cardToken: "tok_...", timestamp: "..." }`.
+5. Open DevTools Console and verify the full postMessage chain is logged:
+   ```
+   [postMessage → iframe] TOKENIZE_CARD
+   [Card Iframe] POST /cards/tokenize (mocked)
+   [Card Iframe] Token received: tok_... | Masked PAN: 4111****1111
+   [postMessage → parent] CARD_TOKENIZED
+   [postMessage ← iframe] CARD_TOKENIZED
+   [Payment] POST /payments/process { amount: "100.00", currency: "EUR", cardToken: "tok_..." }
+   [Redirect] → /payment/success
+   ```
 
 ### Test 4 — Paying with a stored card
 
@@ -157,7 +165,7 @@ Open the browser DevTools **Console** tab to observe `[Payment Request]` logs du
    - Button shows "Processing..." — the payment uses the stored card's token directly (no iframe validation occurs).
    - Toast shows "Processing payment with saved card..." (blue).
    - Toast shows "Payment of 100.00 EUR successful!" (green).
-6. Open DevTools Console and verify the `[Payment Request – Stored Card]` log appears with the saved card's token.
+6. Open DevTools Console and verify `[Payment] POST /payments/process (stored card)` and `[Redirect] → /payment/success` appear.
 
 ### Test 5 — Deselecting a stored card and using a new card
 

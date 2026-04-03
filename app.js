@@ -5,12 +5,13 @@
   var PAYMENT_AMOUNT = '100.00';
   var PAYMENT_CURRENCY = 'EUR';
   var IFRAME_ORIGIN = window.location.origin;
+  var SUCCESS_URL = '/payment/success';
+  var FAILURE_URL = '/payment/failure';
 
   var ALLOWED_INBOUND_MESSAGES = [
     'CARD_IFRAME_READY',
     'STYLES_APPLIED',
     'VALIDATION_ERROR',
-    'VALIDATION_SUCCESS',
     'CARD_TOKENIZED'
   ];
 
@@ -77,7 +78,6 @@
     el.setAttribute('tabindex', '0');
     el.setAttribute('aria-label', card.cardBrand + ' ending in ' + card.last4);
 
-    // Header row
     var header = document.createElement('div');
     header.className = 'stored-card-header';
 
@@ -108,7 +108,6 @@
     header.appendChild(brandIcon);
     header.appendChild(deleteBtn);
 
-    // Card info
     var info = document.createElement('div');
     info.className = 'stored-card-info';
     info.appendChild(document.createTextNode(card.maskedPan));
@@ -118,7 +117,6 @@
     el.appendChild(header);
     el.appendChild(info);
 
-    // Event listeners
     el.addEventListener('click', function (e) {
       if (e.target.closest('.delete-card-btn')) return;
       selectStoredCard(index);
@@ -164,6 +162,7 @@
   /* ── postMessage communication (origin-validated) ───── */
   function sendToIframe(type, payload) {
     if (!iframeReady || !cardIframe || !cardIframe.contentWindow) return;
+    console.log('[postMessage → iframe]', type);
     cardIframe.contentWindow.postMessage({ type: type, payload: payload || {} }, IFRAME_ORIGIN);
   }
 
@@ -173,6 +172,8 @@
     var data = event.data;
     if (!data || !data.type) return;
     if (ALLOWED_INBOUND_MESSAGES.indexOf(data.type) === -1) return;
+
+    console.log('[postMessage ← iframe]', data.type);
 
     switch (data.type) {
       case 'CARD_IFRAME_READY':
@@ -187,11 +188,6 @@
       case 'VALIDATION_ERROR':
         handleValidationErrors(data.payload.errors);
         setProcessing(false);
-        break;
-
-      case 'VALIDATION_SUCCESS':
-        clearValidationErrors();
-        showToast('Validating card...', 'info');
         break;
 
       case 'CARD_TOKENIZED':
@@ -252,9 +248,9 @@
     processPayment(tokenData.token, false);
   }
 
-  /* ── Mock payment (shared logic) ────────────────────── */
+  /* ── Mock payment (simulates POST /payments/process) ── */
   function processPayment(token, isStoredCard) {
-    var label = isStoredCard ? '[Payment Request – Stored Card]' : '[Payment Request]';
+    var label = isStoredCard ? '[Payment] POST /payments/process (stored card)' : '[Payment] POST /payments/process';
     console.log(label, {
       amount: PAYMENT_AMOUNT,
       currency: PAYMENT_CURRENCY,
@@ -265,9 +261,11 @@
     setTimeout(function () {
       var success = Math.random() > 0.1;
       if (success) {
+        console.log('[Redirect] →', SUCCESS_URL);
         showToast('Payment of ' + PAYMENT_AMOUNT + ' ' + PAYMENT_CURRENCY + ' successful!', 'success');
         if (!isStoredCard) sendToIframe('CLEAR_FORM');
       } else {
+        console.log('[Redirect] →', FAILURE_URL);
         showToast('Payment declined. Please try again.', 'error');
       }
       setProcessing(false);
@@ -285,7 +283,7 @@
       showToast('Processing payment with saved card...', 'info');
       processPayment(storedCards[selectedStoredCard].token, true);
     } else {
-      sendToIframe('VALIDATE_AND_TOKENIZE');
+      sendToIframe('TOKENIZE_CARD');
     }
   });
 
