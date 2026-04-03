@@ -40,19 +40,14 @@ A mocked card payment page demonstrating the separation between a main payment p
 
 ## Running Locally
 
-The app requires a local HTTP server because iframe `postMessage` communication does not work over the `file://` protocol.
-
-**Prerequisites:** [Node.js](https://nodejs.org/) (v14 or later) must be installed.
+**Prerequisites:** [Node.js](https://nodejs.org/) (v14 or later).
 
 ```bash
-# 1. Navigate to the project directory
 cd card-payment
-
-# 2. Start a local server (npx downloads 'serve' automatically if not installed)
-npx serve .
+npm start
 ```
 
-This starts a server on **http://localhost:3000** (the port is shown in the terminal output). Open that URL in your browser.
+This starts a server (the port is printed in the terminal, typically `http://localhost:3000`). Open that URL in your browser.
 
 > **Demo mode:** To load the page with pre-seeded stored cards (Visa + Mastercard), append `?demo` to the URL:
 > `http://localhost:3000/?demo`
@@ -66,10 +61,45 @@ This starts a server on **http://localhost:3000** (the port is shown in the term
 | `app.js` | Main page logic — postMessage handling, stored cards management, mocked payment |
 | `card-form.html` | Iframe hosted payment page (PCI scope) — contains only the card form fields |
 | `card-form.js` | Iframe logic — receives injected styles, validates fields, mocks tokenisation |
+| `package.json` | Project metadata and `npm start` script |
+
+## Security Considerations
+
+This is a mock/demo application, but it implements real security patterns that would be required in production:
+
+### Origin validation on postMessage
+
+Both the main page and the iframe validate `event.origin` before processing any incoming message. Messages from unexpected origins are silently discarded. Each side also maintains an explicit allowlist of accepted message types (`ALLOWED_INBOUND_MESSAGES`), preventing injection of unexpected commands.
+
+```
+// card-form.js — only processes messages from the known parent
+if (event.origin !== PARENT_ORIGIN) return;
+if (ALLOWED_INBOUND_MESSAGES.indexOf(data.type) === -1) return;
+```
+
+### XSS prevention
+
+All dynamic content is inserted via `textContent` or safe DOM construction (`createElement` / `appendChild`). No user-controlled data passes through `innerHTML`. An `escapeHTML` utility is available for attribute contexts.
+
+### PCI scope separation
+
+Card details (PAN, CVV, expiry) exist **only inside the iframe**. The main page never sees raw card data — it only receives a tokenised reference after the iframe validates and mocks a tokenisation API call. This mirrors how real hosted payment pages minimise PCI DSS scope.
+
+### Autocomplete disabled
+
+All card input fields use `autocomplete="off"` to prevent browsers from caching sensitive card data, consistent with PCI DSS requirements.
+
+### Content Security Policy
+
+The main page includes a `<meta>` CSP header restricting scripts, styles, and frames to `'self'`, preventing injection of external resources.
+
+### Iframe sandbox
+
+The iframe uses `sandbox="allow-scripts allow-same-origin"`. In production, the iframe would be served from a **different origin** (the payment processor's domain), which makes the sandbox effective. In this local mock, both pages share the same origin — a console warning notes this, which is expected and harmless for the demo.
 
 ## Test Cases
 
-Use these test cases to manually verify the app end-to-end. Open the browser DevTools **Console** tab to observe `[Payment Request]` logs during payment flows.
+Open the browser DevTools **Console** tab to observe `[Payment Request]` logs during payment flows.
 
 ### Test 1 — Style injection from main page to iframe
 

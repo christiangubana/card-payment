@@ -1,0 +1,11 @@
+{
+  "name": "card-payment",
+  "version": "1.0.0",
+  "description": "Mocked card payment page with iframe-based PCI-scoped card form and postMessage communication",
+  "private": true,
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "keywords": ["payment", "card", "iframe", "postMessage", "PCI"],
+  "license": "MIT"
+}

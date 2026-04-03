@@ -1,24 +1,33 @@
 (function () {
   'use strict';
 
-  const PARENT_ORIGIN = '*';
+  /* ── Security: define the expected parent origin ─────── */
+  var PARENT_ORIGIN = window.location.origin;
 
-  const fields = {
+  var ALLOWED_INBOUND_MESSAGES = [
+    'INJECT_STYLES',
+    'VALIDATE_AND_TOKENIZE',
+    'PREFILL_CARD',
+    'CLEAR_FORM'
+  ];
+
+  /* ── DOM references ─────────────────────────────────── */
+  var fields = {
     cardholderName: document.getElementById('cardholder-name'),
     cardNumber: document.getElementById('card-number'),
     expiryDate: document.getElementById('expiry-date'),
     cvv: document.getElementById('cvv'),
   };
 
-  /* ── Formatting helpers ─────────────────────────────────── */
+  /* ── Formatting helpers ─────────────────────────────── */
 
   fields.cardNumber.addEventListener('input', function () {
-    let v = this.value.replace(/\D/g, '').slice(0, 16);
+    var v = this.value.replace(/\D/g, '').slice(0, 16);
     this.value = v.replace(/(.{4})/g, '$1 ').trim();
   });
 
   fields.expiryDate.addEventListener('input', function () {
-    let v = this.value.replace(/\D/g, '').slice(0, 4);
+    var v = this.value.replace(/\D/g, '').slice(0, 4);
     if (v.length >= 3) v = v.slice(0, 2) + '/' + v.slice(2);
     this.value = v;
   });
@@ -27,7 +36,7 @@
     this.value = this.value.replace(/\D/g, '').slice(0, 4);
   });
 
-  /* ── Validation ─────────────────────────────────────────── */
+  /* ── Validation ─────────────────────────────────────── */
 
   function clearErrors() {
     document.querySelectorAll('.error-message').forEach(function (el) {
@@ -85,8 +94,8 @@
       showError('expiry-date', 'Enter a valid expiry (MM/YY)');
       errors.push({ field: 'expiry-date', message: 'Enter a valid expiry (MM/YY)' });
     } else {
-      var month = parseInt(expiryMatch[1], 10);
       var year = parseInt('20' + expiryMatch[2], 10);
+      var month = parseInt(expiryMatch[1], 10);
       var now = new Date();
       var expDate = new Date(year, month);
       if (expDate <= now) {
@@ -104,7 +113,7 @@
     return errors;
   }
 
-  /* ── Mock tokenisation ──────────────────────────────────── */
+  /* ── Mock tokenisation ──────────────────────────────── */
 
   function mockTokenise() {
     var rawPan = fields.cardNumber.value.replace(/\s/g, '');
@@ -133,11 +142,14 @@
     return 'unknown';
   }
 
-  /* ── postMessage listener ───────────────────────────────── */
+  /* ── postMessage listener (origin-validated) ────────── */
 
   window.addEventListener('message', function (event) {
+    if (event.origin !== PARENT_ORIGIN) return;
+
     var data = event.data;
     if (!data || !data.type) return;
+    if (ALLOWED_INBOUND_MESSAGES.indexOf(data.type) === -1) return;
 
     switch (data.type) {
       case 'INJECT_STYLES':
@@ -181,6 +193,6 @@
     window.parent.postMessage({ type: type, payload: payload }, PARENT_ORIGIN);
   }
 
-  /* ── Notify parent that iframe is ready ─────────────────── */
+  /* ── Notify parent that iframe is ready ─────────────── */
   sendToParent('CARD_IFRAME_READY', {});
 })();

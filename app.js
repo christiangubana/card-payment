@@ -4,6 +4,15 @@
   /* ── Configuration ──────────────────────────────────── */
   var PAYMENT_AMOUNT = '100.00';
   var PAYMENT_CURRENCY = 'EUR';
+  var IFRAME_ORIGIN = window.location.origin;
+
+  var ALLOWED_INBOUND_MESSAGES = [
+    'CARD_IFRAME_READY',
+    'STYLES_APPLIED',
+    'VALIDATION_ERROR',
+    'VALIDATION_SUCCESS',
+    'CARD_TOKENIZED'
+  ];
 
   /* ── DOM references ─────────────────────────────────── */
   var cardIframe = document.getElementById('card-iframe');
@@ -37,7 +46,14 @@
     localStorage.setItem('storedCards', JSON.stringify(storedCards));
   }
 
-  /* ── Render stored cards ────────────────────────────── */
+  /* ── Safe text helper (prevents XSS) ────────────────── */
+  function escapeHTML(str) {
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+  }
+
+  /* ── Render stored cards (safe DOM construction) ─────── */
   function renderStoredCards() {
     storedCardsGrid.innerHTML = '';
 
@@ -52,25 +68,7 @@
     storedCardsSection.classList.remove('hidden');
 
     storedCards.forEach(function (card, index) {
-      var el = document.createElement('div');
-      el.className = 'stored-card' + (selectedStoredCard === index ? ' selected' : '');
-      el.innerHTML = buildStoredCardHTML(card);
-      el.setAttribute('data-index', index);
-      el.setAttribute('role', 'button');
-      el.setAttribute('tabindex', '0');
-      el.setAttribute('aria-label', card.cardBrand + ' ending in ' + card.last4);
-
-      el.addEventListener('click', function (e) {
-        if (e.target.closest('.delete-card-btn')) return;
-        selectStoredCard(index);
-      });
-
-      var deleteBtn = el.querySelector('.delete-card-btn');
-      deleteBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        deleteStoredCard(index);
-      });
-
+      var el = buildStoredCardElement(card, index);
       storedCardsGrid.appendChild(el);
     });
 
@@ -78,34 +76,71 @@
     cardDetailsTitle.textContent = 'Card details';
   }
 
-  function buildStoredCardHTML(card) {
-    var brandHTML = '';
+  function buildStoredCardElement(card, index) {
+    var el = document.createElement('div');
+    el.className = 'stored-card' + (selectedStoredCard === index ? ' selected' : '');
+    el.setAttribute('data-index', index);
+    el.setAttribute('role', 'button');
+    el.setAttribute('tabindex', '0');
+    el.setAttribute('aria-label', escapeHTML(card.cardBrand) + ' ending in ' + escapeHTML(card.last4));
+
+    // Header row
+    var header = document.createElement('div');
+    header.className = 'stored-card-header';
+
+    var brandIcon = document.createElement('div');
     if (card.cardBrand === 'visa') {
-      brandHTML = '<div class="card-brand-icon visa">VISA</div>';
+      brandIcon.className = 'card-brand-icon visa';
+      brandIcon.textContent = 'VISA';
     } else if (card.cardBrand === 'mastercard') {
-      brandHTML = '<div class="card-brand-icon mastercard">'
-        + '<div class="mastercard-circles"><span></span><span></span></div></div>';
+      brandIcon.className = 'card-brand-icon mastercard';
+      var circles = document.createElement('div');
+      circles.className = 'mastercard-circles';
+      circles.appendChild(document.createElement('span'));
+      circles.appendChild(document.createElement('span'));
+      brandIcon.appendChild(circles);
     } else {
-      brandHTML = '<div class="card-brand-icon" style="background:#555;font-size:9px;">'
-        + card.cardBrand.toUpperCase() + '</div>';
+      brandIcon.className = 'card-brand-icon';
+      brandIcon.style.background = '#555';
+      brandIcon.style.fontSize = '9px';
+      brandIcon.textContent = card.cardBrand.toUpperCase();
     }
 
-    return ''
-      + '<div class="stored-card-header">'
-      +   brandHTML
-      +   '<button class="delete-card-btn" title="Delete card" aria-label="Delete ' + card.cardBrand + ' card">&#128465;</button>'
-      + '</div>'
-      + '<div class="stored-card-info">'
-      +   card.maskedPan + '<br>' + card.expiryDate
-      + '</div>';
+    var deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-card-btn';
+    deleteBtn.title = 'Delete card';
+    deleteBtn.setAttribute('aria-label', 'Delete ' + escapeHTML(card.cardBrand) + ' card');
+    deleteBtn.textContent = '\uD83D\uDDD1';
+
+    header.appendChild(brandIcon);
+    header.appendChild(deleteBtn);
+
+    // Card info
+    var info = document.createElement('div');
+    info.className = 'stored-card-info';
+    info.appendChild(document.createTextNode(card.maskedPan));
+    info.appendChild(document.createElement('br'));
+    info.appendChild(document.createTextNode(card.expiryDate));
+
+    el.appendChild(header);
+    el.appendChild(info);
+
+    // Event listeners
+    el.addEventListener('click', function (e) {
+      if (e.target.closest('.delete-card-btn')) return;
+      selectStoredCard(index);
+    });
+
+    deleteBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      deleteStoredCard(index);
+    });
+
+    return el;
   }
 
   function selectStoredCard(index) {
-    if (selectedStoredCard === index) {
-      selectedStoredCard = null;
-    } else {
-      selectedStoredCard = index;
-    }
+    selectedStoredCard = (selectedStoredCard === index) ? null : index;
     clearValidationErrors();
     renderStoredCards();
   }
@@ -133,15 +168,18 @@
       + '.error-message { display: block; font-size: 12px; color: #ff4d4d; margin-top: 4px; min-height: 16px; }';
   }
 
-  /* ── postMessage communication ──────────────────────── */
+  /* ── postMessage communication (origin-validated) ───── */
   function sendToIframe(type, payload) {
-    if (!cardIframe || !cardIframe.contentWindow) return;
-    cardIframe.contentWindow.postMessage({ type: type, payload: payload || {} }, '*');
+    if (!iframeReady || !cardIframe || !cardIframe.contentWindow) return;
+    cardIframe.contentWindow.postMessage({ type: type, payload: payload || {} }, IFRAME_ORIGIN);
   }
 
   window.addEventListener('message', function (event) {
+    if (event.origin !== IFRAME_ORIGIN) return;
+
     var data = event.data;
     if (!data || !data.type) return;
+    if (ALLOWED_INBOUND_MESSAGES.indexOf(data.type) === -1) return;
 
     switch (data.type) {
       case 'CARD_IFRAME_READY':
@@ -172,8 +210,8 @@
   /* ── Iframe resize ──────────────────────────────────── */
   function resizeIframe() {
     try {
-      var body = cardIframe.contentDocument || cardIframe.contentWindow.document;
-      cardIframe.style.height = body.body.scrollHeight + 20 + 'px';
+      var doc = cardIframe.contentDocument || cardIframe.contentWindow.document;
+      cardIframe.style.height = doc.body.scrollHeight + 20 + 'px';
     } catch (_) {
       cardIframe.style.height = '320px';
     }
@@ -218,37 +256,16 @@
       }
     }
 
-    mockPaymentRequest(tokenData.token);
+    processPayment(tokenData.token, false);
   }
 
-  /* ── Mock payment ───────────────────────────────────── */
-  function mockPaymentRequest(token) {
-    var request = {
+  /* ── Mock payment (shared logic) ────────────────────── */
+  function processPayment(token, isStoredCard) {
+    var label = isStoredCard ? '[Payment Request – Stored Card]' : '[Payment Request]';
+    console.log(label, {
       amount: PAYMENT_AMOUNT,
       currency: PAYMENT_CURRENCY,
       cardToken: token,
-      timestamp: new Date().toISOString(),
-    };
-
-    console.log('[Payment Request]', request);
-
-    setTimeout(function () {
-      var success = Math.random() > 0.1;
-      if (success) {
-        showToast('Payment of ' + PAYMENT_AMOUNT + ' ' + PAYMENT_CURRENCY + ' successful!', 'success');
-        sendToIframe('CLEAR_FORM');
-      } else {
-        showToast('Payment declined. Please try again.', 'error');
-      }
-      setProcessing(false);
-    }, 1200);
-  }
-
-  function mockPaymentWithStoredCard(card) {
-    console.log('[Payment Request – Stored Card]', {
-      amount: PAYMENT_AMOUNT,
-      currency: PAYMENT_CURRENCY,
-      cardToken: card.token,
       timestamp: new Date().toISOString(),
     });
 
@@ -256,6 +273,7 @@
       var success = Math.random() > 0.1;
       if (success) {
         showToast('Payment of ' + PAYMENT_AMOUNT + ' ' + PAYMENT_CURRENCY + ' successful!', 'success');
+        if (!isStoredCard) sendToIframe('CLEAR_FORM');
       } else {
         showToast('Payment declined. Please try again.', 'error');
       }
@@ -272,7 +290,7 @@
 
     if (selectedStoredCard !== null && storedCards[selectedStoredCard]) {
       showToast('Processing payment with saved card...', 'info');
-      mockPaymentWithStoredCard(storedCards[selectedStoredCard]);
+      processPayment(storedCards[selectedStoredCard].token, true);
     } else {
       sendToIframe('VALIDATE_AND_TOKENIZE');
     }
@@ -282,7 +300,11 @@
     processing = state;
     payButton.disabled = state;
     if (state) {
-      payButton.innerHTML = '<span class="spinner"></span> Processing...';
+      payButton.textContent = '';
+      var spinner = document.createElement('span');
+      spinner.className = 'spinner';
+      payButton.appendChild(spinner);
+      payButton.appendChild(document.createTextNode(' Processing...'));
     } else {
       payButton.textContent = 'Pay ' + PAYMENT_AMOUNT + ' ' + PAYMENT_CURRENCY + ' (Fee included)';
     }
@@ -306,7 +328,7 @@
     }, 3500);
   }
 
-  /* ── Demo mode: ?demo seeds sample stored cards ──────── */
+  /* ── Demo mode: ?demo seeds sample stored cards ─────── */
   if (window.location.search.indexOf('demo') !== -1 && storedCards.length === 0) {
     storedCards = [
       { token: 'tok_demo_visa', maskedPan: '4111****1111', last4: '1111', expiryDate: '12/28', cardholderName: 'John Smith', cardBrand: 'visa' },
