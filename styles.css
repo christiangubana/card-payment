@@ -1,0 +1,335 @@
+/* ── Reset & base ─────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-primary: #111111;
+  --bg-secondary: #1a1a1a;
+  --bg-input: #2a2a2a;
+  --bg-card: #2e2e2e;
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0a0;
+  --text-label: #8a8a8a;
+  --accent: #d1f526;
+  --accent-hover: #bde01f;
+  --border-default: #3a3a3a;
+  --border-active: #d1f526;
+  --error: #ff4d4d;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --transition: 0.2s ease;
+}
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Payment container ────────────────────────────────── */
+.payment-container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 32px 20px 40px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Stored cards section ─────────────────────────────── */
+.stored-cards-section {
+  margin-bottom: 28px;
+}
+
+.stored-cards-grid {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.stored-cards-grid::-webkit-scrollbar {
+  display: none;
+}
+
+.stored-card {
+  flex: 0 0 180px;
+  background: var(--bg-card);
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  padding: 14px;
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+  position: relative;
+}
+
+.stored-card:hover {
+  background: #363636;
+}
+
+.stored-card.selected {
+  border-color: var(--accent);
+}
+
+.stored-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.card-brand-icon {
+  width: 42px;
+  height: 28px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.card-brand-icon.visa {
+  background: linear-gradient(135deg, #1a1f71, #2e3192);
+  color: #fff;
+}
+
+.card-brand-icon.mastercard {
+  background: linear-gradient(135deg, #555, #777);
+}
+
+.mastercard-circles {
+  display: flex;
+  gap: -4px;
+}
+
+.mastercard-circles span {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.mastercard-circles span:first-child {
+  background: #eb001b;
+}
+
+.mastercard-circles span:last-child {
+  background: #f79e1b;
+  margin-left: -6px;
+}
+
+.delete-card-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 16px;
+  transition: color var(--transition);
+  line-height: 1;
+}
+
+.delete-card-btn:hover {
+  color: var(--error);
+}
+
+.stored-card-info {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* ── Section headings ─────────────────────────────────── */
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+
+/* ── Card iframe container ────────────────────────────── */
+.card-iframe-wrapper {
+  width: 100%;
+  border: none;
+  overflow: hidden;
+  margin-bottom: 20px;
+  transition: height var(--transition);
+}
+
+.card-iframe-wrapper iframe {
+  width: 100%;
+  border: none;
+  display: block;
+}
+
+/* ── Save card toggle ─────────────────────────────────── */
+.save-card-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: #444;
+  border-radius: 28px;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  left: 3px;
+  bottom: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform var(--transition);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background: var(--accent);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(20px);
+}
+
+.save-card-label {
+  font-size: 15px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+/* ── Pay button ───────────────────────────────────────── */
+.pay-button {
+  width: 100%;
+  padding: 18px;
+  border: none;
+  border-radius: 50px;
+  background: var(--accent);
+  color: #111;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition), transform 0.1s ease;
+  margin-top: auto;
+  letter-spacing: -0.2px;
+}
+
+.pay-button:hover {
+  background: var(--accent-hover);
+}
+
+.pay-button:active {
+  transform: scale(0.985);
+}
+
+.pay-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Status / Toast ───────────────────────────────────── */
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
+  padding: 14px 28px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 1000;
+  opacity: 0;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.toast.visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.toast.success {
+  background: #1a3a1a;
+  color: #4ade80;
+  border: 1px solid #2a5a2a;
+}
+
+.toast.error {
+  background: #3a1a1a;
+  color: #ff6b6b;
+  border: 1px solid #5a2a2a;
+}
+
+.toast.info {
+  background: #1a2a3a;
+  color: #60a5fa;
+  border: 1px solid #2a3a5a;
+}
+
+/* ── Loading spinner on button ────────────────────────── */
+.pay-button .spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 3px solid rgba(0,0,0,0.2);
+  border-top-color: #111;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Validation errors shown in main page ─────────────── */
+.validation-errors {
+  margin-bottom: 16px;
+}
+
+.validation-errors p {
+  color: var(--error);
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+/* ── New card / stored card mode toggle ───────────────── */
+.hidden {
+  display: none !important;
+}
+
+.new-card-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
