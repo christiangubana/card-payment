@@ -2,6 +2,8 @@
 
 A mocked card payment page demonstrating the separation between a main payment page and an embedded iframe (Hosted Payment Page) for PCI-compliant card details collection. All communication between the two pages happens via browser `postMessage` window events.
 
+<img width="3241" height="1600" alt="Image" src="https://github.com/user-attachments/assets/702cf114-97c3-4300-93ac-b7e64e05c49a" />
+
 ## Architecture
 
 ```
