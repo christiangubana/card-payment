@@ -7,19 +7,13 @@
 
 :root {
   --bg-primary: #111111;
-  --bg-secondary: #1a1a1a;
-  --bg-input: #2a2a2a;
   --bg-card: #2e2e2e;
   --text-primary: #ffffff;
   --text-secondary: #a0a0a0;
-  --text-label: #8a8a8a;
   --accent: #d1f526;
   --accent-hover: #bde01f;
-  --border-default: #3a3a3a;
-  --border-active: #d1f526;
   --error: #ff4d4d;
   --radius: 12px;
-  --radius-sm: 8px;
   --transition: 0.2s ease;
 }
 

@@ -7,7 +7,6 @@
   var ALLOWED_INBOUND_MESSAGES = [
     'INJECT_STYLES',
     'VALIDATE_AND_TOKENIZE',
-    'PREFILL_CARD',
     'CLEAR_FORM'
   ];
 
@@ -167,15 +166,6 @@
           mockTokenise().then(function (result) {
             sendToParent('CARD_TOKENIZED', result);
           });
-        }
-        break;
-
-      case 'PREFILL_CARD':
-        if (data.payload) {
-          if (data.payload.cardholderName) fields.cardholderName.value = data.payload.cardholderName;
-          if (data.payload.cardNumber) fields.cardNumber.value = data.payload.cardNumber;
-          if (data.payload.expiryDate) fields.expiryDate.value = data.payload.expiryDate;
-          if (data.payload.cvv) fields.cvv.value = data.payload.cvv;
         }
         break;
 

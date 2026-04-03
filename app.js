@@ -46,13 +46,6 @@
     localStorage.setItem('storedCards', JSON.stringify(storedCards));
   }
 
-  /* ── Safe text helper (prevents XSS) ────────────────── */
-  function escapeHTML(str) {
-    var div = document.createElement('div');
-    div.appendChild(document.createTextNode(str));
-    return div.innerHTML;
-  }
-
   /* ── Render stored cards (safe DOM construction) ─────── */
   function renderStoredCards() {
     storedCardsGrid.innerHTML = '';
@@ -82,7 +75,7 @@
     el.setAttribute('data-index', index);
     el.setAttribute('role', 'button');
     el.setAttribute('tabindex', '0');
-    el.setAttribute('aria-label', escapeHTML(card.cardBrand) + ' ending in ' + escapeHTML(card.last4));
+    el.setAttribute('aria-label', card.cardBrand + ' ending in ' + card.last4);
 
     // Header row
     var header = document.createElement('div');
@@ -109,7 +102,7 @@
     var deleteBtn = document.createElement('button');
     deleteBtn.className = 'delete-card-btn';
     deleteBtn.title = 'Delete card';
-    deleteBtn.setAttribute('aria-label', 'Delete ' + escapeHTML(card.cardBrand) + ' card');
+    deleteBtn.setAttribute('aria-label', 'Delete ' + card.cardBrand + ' card');
     deleteBtn.textContent = '\uD83D\uDDD1';
 
     header.appendChild(brandIcon);
