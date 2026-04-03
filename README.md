@@ -40,10 +40,16 @@ A mocked card payment page demonstrating the separation between a main payment p
 
 ## Running Locally
 
-**Prerequisites:** [Node.js](https://nodejs.org/) (v14 or later).
+**Prerequisites:** [Git](https://git-scm.com/) and [Node.js](https://nodejs.org/) (v14 or later).
 
 ```bash
+# 1. Clone the repository
+git clone https://github.com/ApolloSigma/card-payment.git
+
+# 2. Navigate into the project
 cd card-payment
+
+# 3. Start the local server
 npm start
 ```
 
