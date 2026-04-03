@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Card Form - PCI Scope</title>
+  <style>
+    /* Minimal reset — all visual styling injected from parent via postMessage */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: sans-serif; background: transparent; }
+  </style>
+</head>
+<body>
+  <form id="card-form" autocomplete="off" novalidate>
+    <div class="form-group">
+      <label for="cardholder-name">Cardholder full name</label>
+      <input type="text" id="cardholder-name" placeholder="Name Namesson" autocomplete="cc-name" />
+      <span class="error-message" data-for="cardholder-name"></span>
+    </div>
+
+    <div class="form-group">
+      <label for="card-number">Card number</label>
+      <input type="text" id="card-number" placeholder="1234 1234 1234 1234" inputmode="numeric" autocomplete="cc-number" maxlength="19" />
+      <span class="error-message" data-for="card-number"></span>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group half">
+        <label for="expiry-date">MM/00</label>
+        <input type="text" id="expiry-date" placeholder="08/28" inputmode="numeric" autocomplete="cc-exp" maxlength="5" />
+        <span class="error-message" data-for="expiry-date"></span>
+      </div>
+      <div class="form-group half">
+        <label for="cvv">CVV/CVC</label>
+        <input type="text" id="cvv" placeholder="123" inputmode="numeric" autocomplete="cc-csc" maxlength="4" />
+        <span class="error-message" data-for="cvv"></span>
+      </div>
+    </div>
+  </form>
+
+  <style id="injected-styles"></style>
+  <script src="card-form.js"></script>
+</body>
+</html>
