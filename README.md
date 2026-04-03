@@ -1,5 +1,5 @@
 # Card Payment App
-
+https://github.com/christiangubana/card-payment/blob/main/image.png
 A mocked card payment page demonstrating the separation between a main payment page and an embedded iframe (Hosted Payment Page) for PCI-compliant card details collection. All communication between the two pages happens via browser `postMessage` window events.
 
 ## Architecture
