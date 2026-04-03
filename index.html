@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Card Payment</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="payment-container">
+
+    <!-- Stored cards -->
+    <section id="stored-cards-section" class="stored-cards-section hidden">
+      <div id="stored-cards-grid" class="stored-cards-grid"></div>
+    </section>
+
+    <!-- New card entry -->
+    <section id="new-card-section" class="new-card-section">
+      <h2 id="card-details-title" class="section-title">Card details</h2>
+
+      <!-- Card iframe (PCI scope) -->
+      <div class="card-iframe-wrapper">
+        <iframe
+          id="card-iframe"
+          src="card-form.html"
+          title="Card details form"
+          sandbox="allow-scripts allow-same-origin"
+          scrolling="no"
+        ></iframe>
+      </div>
+
+      <!-- Save card toggle -->
+      <div class="save-card-row">
+        <label class="toggle-switch">
+          <input type="checkbox" id="save-card-toggle" checked>
+          <span class="toggle-slider"></span>
+        </label>
+        <label class="save-card-label" for="save-card-toggle">Save card</label>
+      </div>
+    </section>
+
+    <!-- Validation error messages -->
+    <div id="validation-errors" class="validation-errors"></div>
+
+    <!-- Pay button -->
+    <button id="pay-button" class="pay-button">
+      Pay 100.00 EUR (Fee included)
+    </button>
+  </div>
+
+  <!-- Toast notification -->
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
