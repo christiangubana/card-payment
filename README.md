@@ -44,7 +44,7 @@ A mocked card payment page demonstrating the separation between a main payment p
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/ApolloSigma/card-payment.git
+git clone https://github.com/christiangubana/card-payment.git
 
 # 2. Navigate into the project
 cd card-payment
