@@ -9,7 +9,6 @@
     'CLEAR_FORM'
   ];
 
-  /* ── DOM references ─────────────────────────────────── */
   var fields = {
     cardholderName: document.getElementById('cardholder-name'),
     cardNumber: document.getElementById('card-number'),
@@ -17,7 +16,7 @@
     cvv: document.getElementById('cvv'),
   };
 
-  /* ── Formatting helpers ─────────────────────────────── */
+  /* Input formatting */
 
   fields.cardNumber.addEventListener('input', function () {
     var v = this.value.replace(/\D/g, '').slice(0, 16);
@@ -34,15 +33,11 @@
     this.value = this.value.replace(/\D/g, '').slice(0, 4);
   });
 
-  /* ── Validation ─────────────────────────────────────── */
+  /* Validation */
 
   function clearErrors() {
-    document.querySelectorAll('.error-message').forEach(function (el) {
-      el.textContent = '';
-    });
-    document.querySelectorAll('input').forEach(function (el) {
-      el.classList.remove('input-error');
-    });
+    document.querySelectorAll('.error-message').forEach(function (el) { el.textContent = ''; });
+    document.querySelectorAll('input').forEach(function (el) { el.classList.remove('input-error'); });
   }
 
   function showError(fieldId, message) {
@@ -57,10 +52,7 @@
     var alt = false;
     for (var i = num.length - 1; i >= 0; i--) {
       var n = parseInt(num[i], 10);
-      if (alt) {
-        n *= 2;
-        if (n > 9) n -= 9;
-      }
+      if (alt) { n *= 2; if (n > 9) n -= 9; }
       sum += n;
       alt = !alt;
     }
@@ -94,9 +86,7 @@
     } else {
       var year = parseInt('20' + expiryMatch[2], 10);
       var month = parseInt(expiryMatch[1], 10);
-      var now = new Date();
-      var expDate = new Date(year, month);
-      if (expDate <= now) {
+      if (new Date(year, month) <= new Date()) {
         showError('expiry-date', 'Card has expired');
         errors.push({ field: 'expiry-date', message: 'Card has expired' });
       }
@@ -111,7 +101,7 @@
     return errors;
   }
 
-  /* ── Mock tokenisation (simulates POST /cards/tokenize) ── */
+  /* Mock tokenisation — simulates POST /cards/tokenize */
 
   function mockTokenise() {
     var rawPan = fields.cardNumber.value.replace(/\s/g, '');
@@ -144,7 +134,7 @@
     return 'unknown';
   }
 
-  /* ── postMessage listener (origin-validated) ────────── */
+  /* postMessage — origin-validated, allowlisted */
 
   window.addEventListener('message', function (event) {
     if (event.origin !== PARENT_ORIGIN) return;
@@ -188,6 +178,5 @@
     window.parent.postMessage({ type: type, payload: payload }, PARENT_ORIGIN);
   }
 
-  /* ── Notify parent that iframe is ready ─────────────── */
   sendToParent('CARD_IFRAME_READY', {});
 })();

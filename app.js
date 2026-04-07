@@ -1,7 +1,6 @@
 (function () {
   'use strict';
 
-  /* ── Configuration ──────────────────────────────────── */
   var PAYMENT_AMOUNT = '100.00';
   var PAYMENT_CURRENCY = 'EUR';
   var IFRAME_ORIGIN = window.location.origin;
@@ -15,7 +14,6 @@
     'CARD_TOKENIZED'
   ];
 
-  /* ── DOM references ─────────────────────────────────── */
   var cardIframe = document.getElementById('card-iframe');
   var payButton = document.getElementById('pay-button');
   var storedCardsSection = document.getElementById('stored-cards-section');
@@ -26,14 +24,11 @@
   var toastEl = document.getElementById('toast');
   var cardDetailsTitle = document.getElementById('card-details-title');
 
-  /* ── State ───────────────────────────────────────────── */
   var iframeReady = false;
   var processing = false;
   var selectedStoredCard = null;
-
   var storedCards = loadStoredCards();
 
-  /* ── Stored cards persistence (localStorage mock) ───── */
   function loadStoredCards() {
     try {
       var raw = localStorage.getItem('storedCards');
@@ -47,7 +42,8 @@
     localStorage.setItem('storedCards', JSON.stringify(storedCards));
   }
 
-  /* ── Render stored cards (safe DOM construction) ─────── */
+  /* Stored cards */
+
   function renderStoredCards() {
     storedCardsGrid.innerHTML = '';
 
@@ -62,8 +58,7 @@
     storedCardsSection.classList.remove('hidden');
 
     storedCards.forEach(function (card, index) {
-      var el = buildStoredCardElement(card, index);
-      storedCardsGrid.appendChild(el);
+      storedCardsGrid.appendChild(buildStoredCardElement(card, index));
     });
 
     newCardSection.classList.remove('hidden');
@@ -144,7 +139,8 @@
     renderStoredCards();
   }
 
-  /* ── Style injection CSS to send into iframe ────────── */
+  /* Style injection — CSS sent to iframe via postMessage */
+
   function getIframeStyles() {
     return ''
       + 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: transparent; color: #fff; }'
@@ -159,7 +155,8 @@
       + '.error-message { display: block; font-size: 12px; color: #ff4d4d; margin-top: 4px; min-height: 16px; }';
   }
 
-  /* ── postMessage communication (origin-validated) ───── */
+  /* postMessage — origin-validated, allowlisted */
+
   function sendToIframe(type, payload) {
     if (!iframeReady || !cardIframe || !cardIframe.contentWindow) return;
     console.log('[postMessage → iframe]', type);
@@ -196,7 +193,6 @@
     }
   });
 
-  /* ── Iframe resize ──────────────────────────────────── */
   function resizeIframe() {
     try {
       var doc = cardIframe.contentDocument || cardIframe.contentWindow.document;
@@ -210,7 +206,8 @@
     setTimeout(resizeIframe, 200);
   });
 
-  /* ── Validation errors ──────────────────────────────── */
+  /* Validation errors */
+
   function handleValidationErrors(errors) {
     validationErrorsDiv.innerHTML = '';
     errors.forEach(function (err) {
@@ -225,7 +222,8 @@
     validationErrorsDiv.innerHTML = '';
   }
 
-  /* ── Tokenization result ────────────────────────────── */
+  /* Tokenization + payment */
+
   function handleTokenized(tokenData) {
     showToast('Card tokenized, processing payment...', 'info');
 
@@ -248,7 +246,6 @@
     processPayment(tokenData.token, false);
   }
 
-  /* ── Mock payment (simulates POST /payments/process) ── */
   function processPayment(token, isStoredCard) {
     var label = isStoredCard ? '[Payment] POST /payments/process (stored card)' : '[Payment] POST /payments/process';
     console.log(label, {
@@ -272,7 +269,8 @@
     }, 1200);
   }
 
-  /* ── Pay button ─────────────────────────────────────── */
+  /* Pay button */
+
   payButton.addEventListener('click', function () {
     if (processing) return;
 
@@ -301,25 +299,20 @@
     }
   }
 
-  /* ── Toast notifications ────────────────────────────── */
+  /* Toast */
+
   var toastTimer = null;
 
   function showToast(message, type) {
     toastEl.textContent = message;
     toastEl.className = 'toast ' + (type || 'info');
-
     clearTimeout(toastTimer);
-
-    requestAnimationFrame(function () {
-      toastEl.classList.add('visible');
-    });
-
-    toastTimer = setTimeout(function () {
-      toastEl.classList.remove('visible');
-    }, 3500);
+    requestAnimationFrame(function () { toastEl.classList.add('visible'); });
+    toastTimer = setTimeout(function () { toastEl.classList.remove('visible'); }, 3500);
   }
 
-  /* ── Demo mode: ?demo seeds sample stored cards ─────── */
+  /* Demo mode — ?demo seeds sample stored cards */
+
   if (window.location.search.indexOf('demo') !== -1 && storedCards.length === 0) {
     storedCards = [
       { token: 'tok_demo_visa', maskedPan: '4111****1111', last4: '1111', expiryDate: '12/28', cardholderName: 'John Smith', cardBrand: 'visa' },
@@ -328,6 +321,5 @@
     saveStoredCards();
   }
 
-  /* ── Init ────────────────────────────────────────────── */
   renderStoredCards();
 })();

@@ -69,6 +69,42 @@ This starts a server (the port is printed in the terminal, typically `http://loc
 | `card-form.js` | Iframe logic — receives injected styles, validates fields, mocks tokenisation |
 | `package.json` | Project metadata and `npm start` script |
 
+## Design Decisions & Trade-offs
+
+### Why iframe + postMessage?
+
+The core requirement is PCI scope separation: card details (PAN, CVV) must never touch the merchant's page. In production, the iframe would be served from the **payment processor's domain**, meaning the merchant page physically cannot access card data — even via JavaScript. The `postMessage` API is the only bridge between the two origins.
+
+This is the same pattern used by Stripe Elements, Adyen Drop-in, and Checkout.com Frames. The main page only ever receives a token back, never raw card data.
+
+**Trade-off:** The iframe boundary makes styling harder (CSS can't cross origins). This is solved by injecting styles via `postMessage` — the parent sends CSS as a string, the iframe applies it to a `<style>` tag. This gives the merchant full visual control while keeping card data isolated.
+
+### Why vanilla HTML/CSS/JS (no framework)?
+
+1. **The brief asks for a working mockup** — a framework adds build tooling and boilerplate that obscures the implementation logic. The entire solution is 6 files with zero dependencies.
+2. **Easier to review** — every file is readable top-to-bottom with no transpilation.
+3. **Mirrors production reality** — hosted payment pages (the iframe side) are typically lightweight, framework-free bundles to minimise load time and attack surface.
+
+**Trade-off:** No component reuse or reactive state. For a single-page mock this is fine; a multi-page product would warrant a framework.
+
+### Why localStorage for stored cards?
+
+The brief requires stored cards without a backend. `localStorage` is the simplest persistence that survives page reloads. The stored data contains only tokens and masked PANs — never raw card details.
+
+**Trade-off:** Not secure for real tokens. In production, stored cards would come from an authenticated API call (`GET /payment-methods`).
+
+### What would change in production?
+
+| This mock | Production |
+|-----------|------------|
+| Iframe on same origin (`localhost`) | Iframe on payment processor's domain |
+| Styles injected via postMessage | Same — this is how real hosted pages work |
+| `window.location.origin` for postMessage target | Hardcoded production origin |
+| Mock tokenisation (`setTimeout`) | Real API call to `POST /cards/tokenize` |
+| Mock payment (`Math.random`) | Real API call to `POST /payments/process` |
+| `localStorage` for saved cards | Backend API (`GET /payment-methods`) |
+| CSP via `<meta>` tag | CSP via HTTP response header |
+
 ## Security Considerations
 
 This is a mock/demo application, but it implements real security patterns that would be required in production:
